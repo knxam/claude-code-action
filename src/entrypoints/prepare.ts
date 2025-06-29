@@ -6,6 +6,7 @@
  */
 
 import * as core from "@actions/core";
+import { $ } from "bun";
 import { setupGitHubToken } from "../github/token";
 import { checkTriggerAction } from "../github/validation/trigger";
 import { checkHumanActor } from "../github/validation/actor";
@@ -62,11 +63,30 @@ async function run() {
       triggerUsername: context.actor,
     });
 
-    // Step 8: Setup branch
-    const branchInfo = await setupBranch(octokit, githubData, context);
+    // Step 8: Setup branch (or use existing if quick-response already created it)
+    let branchInfo;
+    const existingBranch = process.env.CLAUDE_BRANCH;
+    const existingBaseBranch = process.env.BASE_BRANCH;
+
+    if (existingBranch && existingBaseBranch) {
+      console.log(
+        `🔄 Using existing branch from quick-response: ${existingBranch}`,
+      );
+      branchInfo = {
+        baseBranch: existingBaseBranch,
+        claudeBranch: existingBranch,
+        currentBranch: existingBranch,
+      };
+
+      // Checkout the existing branch
+      await $`git fetch origin --depth=1 ${existingBranch}`;
+      await $`git checkout ${existingBranch}`;
+    } else {
+      branchInfo = await setupBranch(octokit, githubData, context);
+    }
 
     // Step 9: Update initial comment with branch link (only for issues that created a new branch)
-    if (branchInfo.claudeBranch) {
+    if (branchInfo.claudeBranch && !existingBranch) {
       await updateTrackingComment(
         octokit,
         context,

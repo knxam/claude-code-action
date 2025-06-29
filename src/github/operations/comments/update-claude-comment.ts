@@ -41,6 +41,7 @@ export async function updateClaudeComment(
       });
     } else {
       // Use issue comment API (works for both issues and PR general comments)
+      // Note: PR comments created via issues API are updated via issues API
       response = await octokit.rest.issues.updateComment({
         owner,
         repo,

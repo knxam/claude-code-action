@@ -35,6 +35,30 @@ type GitHubNewCommit = {
   };
 };
 
+type GitHubPullRequest = {
+  number: number;
+  html_url: string;
+  state: string;
+  title: string;
+  head: {
+    ref: string;
+    sha: string;
+  };
+  base: {
+    ref: string;
+    sha: string;
+  };
+};
+
+type GitHubReaction = {
+  id: number;
+  content: string;
+  user: {
+    login: string;
+  };
+  created_at: string;
+};
+
 // Get repository information from environment variables
 const REPO_OWNER = process.env.REPO_OWNER;
 const REPO_NAME = process.env.REPO_NAME;
@@ -421,6 +445,209 @@ server.tool(
           {
             type: "text",
             text: JSON.stringify(simplifiedResult, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error: ${errorMessage}`,
+          },
+        ],
+        error: errorMessage,
+        isError: true,
+      };
+    }
+  },
+);
+
+// Create pull request tool
+server.tool(
+  "create_pull_request",
+  "Create a new pull request",
+  {
+    title: z.string().describe("The title of the pull request"),
+    head: z.string().describe("The name of the branch with your changes"),
+    base: z
+      .string()
+      .describe("The name of the branch you want changes pulled into"),
+    body: z
+      .string()
+      .optional()
+      .describe("The body content of the pull request"),
+    draft: z
+      .boolean()
+      .optional()
+      .describe("Whether to create as draft (default: false)"),
+  },
+  async ({ title, head, base, body = "", draft = false }) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        throw new Error("GITHUB_TOKEN environment variable is required");
+      }
+
+      const owner = REPO_OWNER;
+      const repo = REPO_NAME;
+
+      const createPrUrl = `${GITHUB_API_URL}/repos/${owner}/${repo}/pulls`;
+      const response = await fetch(createPrUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${githubToken}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          head,
+          base,
+          body,
+          draft,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to create pull request: ${response.status} - ${errorText}`,
+        );
+      }
+
+      const prData = (await response.json()) as GitHubPullRequest;
+
+      const result = {
+        number: prData.number,
+        html_url: prData.html_url,
+        state: prData.state,
+        title: prData.title,
+        head: {
+          ref: prData.head.ref,
+          sha: prData.head.sha,
+        },
+        base: {
+          ref: prData.base.ref,
+          sha: prData.base.sha,
+        },
+      };
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error: ${errorMessage}`,
+          },
+        ],
+        error: errorMessage,
+        isError: true,
+      };
+    }
+  },
+);
+
+// Add reaction tool
+server.tool(
+  "add_reaction",
+  "Add an emoji reaction to an issue, pull request, or comment",
+  {
+    issue_number: z
+      .number()
+      .optional()
+      .describe("Issue or PR number (mutually exclusive with comment_id)"),
+    comment_id: z
+      .number()
+      .optional()
+      .describe("Comment ID (mutually exclusive with issue_number)"),
+    content: z
+      .enum([
+        "+1",
+        "-1",
+        "laugh",
+        "confused",
+        "heart",
+        "hooray",
+        "rocket",
+        "eyes",
+      ])
+      .describe("The reaction emoji to add"),
+  },
+  async ({ issue_number, comment_id, content }) => {
+    try {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        throw new Error("GITHUB_TOKEN environment variable is required");
+      }
+
+      if (!issue_number && !comment_id) {
+        throw new Error("Either issue_number or comment_id must be provided");
+      }
+
+      if (issue_number && comment_id) {
+        throw new Error("Cannot specify both issue_number and comment_id");
+      }
+
+      const owner = REPO_OWNER;
+      const repo = REPO_NAME;
+
+      let reactionUrl: string;
+      if (issue_number) {
+        reactionUrl = `${GITHUB_API_URL}/repos/${owner}/${repo}/issues/${issue_number}/reactions`;
+      } else {
+        reactionUrl = `${GITHUB_API_URL}/repos/${owner}/${repo}/issues/comments/${comment_id}/reactions`;
+      }
+
+      const response = await fetch(reactionUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${githubToken}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          content,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to add reaction: ${response.status} - ${errorText}`,
+        );
+      }
+
+      const reactionData = (await response.json()) as GitHubReaction;
+
+      const result = {
+        id: reactionData.id,
+        content: reactionData.content,
+        user: {
+          login: reactionData.user.login,
+        },
+        created_at: reactionData.created_at,
+      };
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2),
           },
         ],
       };
