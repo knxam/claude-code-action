@@ -61,6 +61,20 @@ inputs:
   github_token:
     description: "GitHub token with repo and pull request permissions (optional if using GitHub App)"
     required: false
+
+  # Claude OAuth configuration
+  claude_access_token:
+    description: "Claude OAuth access token for authentication"
+    required: false
+  claude_refresh_token:
+    description: "Claude OAuth refresh token for automatic token renewal"
+    required: false
+  claude_expires_at:
+    description: "Claude OAuth token expiration timestamp (Unix timestamp in milliseconds)"
+    required: false
+  github_pat:
+    description: "GitHub Personal Access Token with admin:repo_hook permissions for automatic secret updates"
+    required: false
   use_bedrock:
     description: "Use Amazon Bedrock with OIDC authentication instead of direct Anthropic API"
     required: false
@@ -97,6 +111,16 @@ runs:
       run: |
         cd ${GITHUB_ACTION_PATH}
         bun install
+
+    - name: Setup Claude Authentication
+      shell: bash
+      run: |
+        bun run ${GITHUB_ACTION_PATH}/src/auth/claude-oauth.ts
+      env:
+        CLAUDE_ACCESS_TOKEN: ${{ inputs.claude_access_token }}
+        CLAUDE_REFRESH_TOKEN: ${{ inputs.claude_refresh_token }}
+        CLAUDE_EXPIRES_AT: ${{ inputs.claude_expires_at }}
+        GITHUB_PAT: ${{ inputs.github_pat }}
 
     - name: Quick Response (GitHub Copilot-style)
       id: quick-response
