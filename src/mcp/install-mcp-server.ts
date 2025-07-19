@@ -72,6 +72,8 @@ export async function prepareMcpConfig(
       mcpServers: {},
     };
 
+    console.log("claudeCommentId", claudeCommentId);
+
     // Always include comment server for updating Claude comments
     baseMcpConfig.mcpServers.github_comment = {
       command: "bun",
