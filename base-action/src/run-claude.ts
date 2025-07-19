@@ -62,6 +62,30 @@ function parseCustomEnvVars(claudeEnv?: string): Record<string, string> {
   return customEnv;
 }
 
+function getWorkingDirectory(): string {
+  // 1. If explicitly set via environment variable, use that
+  if (process.env.CLAUDE_WORKING_DIR) {
+    return process.env.CLAUDE_WORKING_DIR;
+  }
+
+  // 2. Auto-detect GitHub Actions environment
+  if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_WORKSPACE) {
+    console.log('Detected GitHub Actions environment, using GITHUB_WORKSPACE');
+    return process.env.GITHUB_WORKSPACE;
+  }
+
+  // 3. Check if we're running from within an action directory and try to find the workspace
+  const currentDir = process.cwd();
+  if (currentDir.includes('/_actions/') && process.env.GITHUB_WORKSPACE) {
+    console.log('Detected action directory, switching to GitHub workspace');
+    return process.env.GITHUB_WORKSPACE;
+  }
+
+  // 4. Fallback to current directory
+  console.log('Using current working directory');
+  return currentDir;
+}
+
 export function prepareRunConfig(
   promptPath: string,
   options: ClaudeOptions,
@@ -107,8 +131,8 @@ export function prepareRunConfig(
   // Parse custom environment variables
   const customEnv = parseCustomEnvVars(options.claudeEnv);
 
-  // Get the working directory from environment variable or use current directory
-  const workingDirectory = process.env.CLAUDE_WORKING_DIR || process.cwd();
+  // Auto-detect the correct working directory
+  const workingDirectory = getWorkingDirectory();
 
   return {
     claudeArgs,
