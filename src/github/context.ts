@@ -45,6 +45,18 @@ export type ParsedGitHubContext = {
 export function parseGitHubContext(): ParsedGitHubContext {
   const context = github.context;
 
+  if (context.eventName === 'repository_dispatch' && context.payload.client_payload?.original_event_name) {
+    console.log("🚀 Detected execution via repository_dispatch. Reconstructing context from client_payload.");
+    
+    const clientPayload = context.payload.client_payload;
+    
+    context.eventName = clientPayload.original_event_name;
+    context.payload = clientPayload.original_event_payload;
+    context.payload.action = clientPayload.original_event_payload.action;
+    
+    console.log(`📦 Reconstructed eventName: ${context.eventName}, action: ${context.payload.action}`);
+  }
+
   const commonFields = {
     runId: process.env.GITHUB_RUN_ID!,
     eventName: context.eventName,
