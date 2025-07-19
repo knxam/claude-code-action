@@ -50,6 +50,7 @@ async function run() {
       return;
     }
     */
+    core.setOutput("contains_trigger", "true");
 
     // Step 5: Check if actor is human
     // await checkHumanActor(octokit.rest, context);
