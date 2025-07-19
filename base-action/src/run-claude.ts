@@ -27,6 +27,7 @@ type PreparedConfig = {
   claudeArgs: string[];
   promptPath: string;
   env: Record<string, string>;
+  cwd?: string;
 };
 
 function parseCustomEnvVars(claudeEnv?: string): Record<string, string> {
@@ -106,10 +107,14 @@ export function prepareRunConfig(
   // Parse custom environment variables
   const customEnv = parseCustomEnvVars(options.claudeEnv);
 
+  // Get the working directory from environment variable or use current directory
+  const workingDirectory = process.env.CLAUDE_WORKING_DIR || process.cwd();
+
   return {
     claudeArgs,
     promptPath,
     env: customEnv,
+    cwd: workingDirectory,
   };
 }
 
@@ -145,6 +150,7 @@ export async function runClaude(promptPath: string, options: ClaudeOptions) {
 
   // Output to console
   console.log(`Running Claude with prompt from file: ${config.promptPath}`);
+  console.log(`Claude working directory: ${config.cwd}`);
 
   // Start sending prompt to pipe in background
   const catProcess = spawn("cat", [config.promptPath], {
@@ -164,6 +170,7 @@ export async function runClaude(promptPath: string, options: ClaudeOptions) {
       ...process.env,
       ...config.env,
     },
+    cwd: config.cwd,
   });
 
   // Handle Claude process errors
