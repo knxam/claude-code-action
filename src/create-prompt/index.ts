@@ -757,8 +757,6 @@ export async function createPrompt(
       promptContent,
     );
 
-    console.log("setting allowed tools");
-
     // Set allowed tools
     const hasActionsReadPermission =
       context.inputs.additionalPermissions.get("actions") === "read" &&
@@ -773,13 +771,9 @@ export async function createPrompt(
       context.inputs.allowedTools,
     );
 
-    console.log("allowed tools", allAllowedTools);
-    console.log("disallowed tools", allDisallowedTools);
-
     core.exportVariable("ALLOWED_TOOLS", allAllowedTools);
     core.exportVariable("DISALLOWED_TOOLS", allDisallowedTools);
   } catch (error) {
-    console.log("Create prompt failed with error:", error);
     core.setFailed(`Create prompt failed with error: ${error}`);
     process.exit(1);
   }

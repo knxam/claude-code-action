@@ -28,7 +28,6 @@ type PreparedConfig = {
   claudeArgs: string[];
   promptPath: string;
   env: Record<string, string>;
-  cwd?: string;
 };
 
 function parseCustomEnvVars(claudeEnv?: string): Record<string, string> {
@@ -61,30 +60,6 @@ function parseCustomEnvVars(claudeEnv?: string): Record<string, string> {
   }
 
   return customEnv;
-}
-
-function getWorkingDirectory(): string {
-  // 1. If explicitly set via environment variable, use that
-  if (process.env.CLAUDE_WORKING_DIR) {
-    return process.env.CLAUDE_WORKING_DIR;
-  }
-
-  // 2. Auto-detect GitHub Actions environment
-  if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_WORKSPACE) {
-    console.log('Detected GitHub Actions environment, using GITHUB_WORKSPACE');
-    return process.env.GITHUB_WORKSPACE;
-  }
-
-  // 3. Check if we're running from within an action directory and try to find the workspace
-  const currentDir = process.cwd();
-  if (currentDir.includes('/_actions/') && process.env.GITHUB_WORKSPACE) {
-    console.log('Detected action directory, switching to GitHub workspace');
-    return process.env.GITHUB_WORKSPACE;
-  }
-
-  // 4. Fallback to current directory
-  console.log('Using current working directory');
-  return currentDir;
 }
 
 export function prepareRunConfig(
@@ -135,14 +110,10 @@ export function prepareRunConfig(
   // Parse custom environment variables
   const customEnv = parseCustomEnvVars(options.claudeEnv);
 
-  // Auto-detect the correct working directory
-  const workingDirectory = getWorkingDirectory();
-
   return {
     claudeArgs,
     promptPath,
     env: customEnv,
-    cwd: workingDirectory,
   };
 }
 
@@ -178,7 +149,6 @@ export async function runClaude(promptPath: string, options: ClaudeOptions) {
 
   // Output to console
   console.log(`Running Claude with prompt from file: ${config.promptPath}`);
-  console.log(`Claude working directory: ${config.cwd}`);
 
   // Start sending prompt to pipe in background
   const catProcess = spawn("cat", [config.promptPath], {
@@ -198,7 +168,6 @@ export async function runClaude(promptPath: string, options: ClaudeOptions) {
       ...process.env,
       ...config.env,
     },
-    cwd: config.cwd,
   });
 
   // Handle Claude process errors
