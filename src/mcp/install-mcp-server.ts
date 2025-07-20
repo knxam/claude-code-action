@@ -72,8 +72,6 @@ export async function prepareMcpConfig(
       mcpServers: {},
     };
 
-    console.log("claudeCommentId", claudeCommentId);
-
     // Always include comment server for updating Claude comments
     baseMcpConfig.mcpServers.github_comment = {
       command: "bun",
@@ -86,7 +84,7 @@ export async function prepareMcpConfig(
         REPO_OWNER: owner,
         REPO_NAME: repo,
         ...(claudeCommentId && { CLAUDE_COMMENT_ID: claudeCommentId }),
-        GITHUB_EVENT_NAME: process.env.GITHUB_EVENT_NAME || "",
+        GITHUB_EVENT_NAME: context.eventName || process.env.GITHUB_EVENT_NAME || "",
         GITHUB_API_URL: GITHUB_API_URL,
       },
     };
@@ -106,7 +104,7 @@ export async function prepareMcpConfig(
           BRANCH_NAME: branch,
           BASE_BRANCH: baseBranch,
           REPO_DIR: process.env.GITHUB_WORKSPACE || process.cwd(),
-          GITHUB_EVENT_NAME: process.env.GITHUB_EVENT_NAME || "",
+          GITHUB_EVENT_NAME: context.eventName || process.env.GITHUB_EVENT_NAME || "",
           IS_PR: process.env.IS_PR || "false",
           GITHUB_API_URL: GITHUB_API_URL,
         },
