@@ -46,6 +46,10 @@ export function parseGitHubContext(): ParsedGitHubContext {
   const context = github.context;
 
   if (context.eventName === 'repository_dispatch') {
+    // Replace bot actor with original user
+    context.actor ||= context.payload.client_payload?.assignee_user;
+    console.log("👤 Actor: ", context.actor);
+
     if (context.payload.client_payload?.original_event_name) {
       console.log("🚀 Detected execution via repository_dispatch. Reconstructing context from client_payload.");
       
@@ -56,11 +60,6 @@ export function parseGitHubContext(): ParsedGitHubContext {
       context.payload.action = clientPayload.original_event_payload.action;
       
       console.log(`📦 Reconstructed eventName: ${context.eventName}, action: ${context.payload.action}`);
-    }
-  
-    if (context.payload.client_payload?.assignee_user) {
-      // Replace bot actor with original user
-      context.actor = context.payload.client_payload.assignee_user || context.actor;
     }
   }
 
