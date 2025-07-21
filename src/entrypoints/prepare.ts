@@ -29,7 +29,6 @@ async function run() {
     const context = parseGitHubContext();
 
     // Step 3: Check write permissions
-    /*
     const hasWritePermissions = await checkWritePermissions(
       octokit.rest,
       context,
@@ -39,7 +38,6 @@ async function run() {
         "Actor does not have write permissions to the repository",
       );
     }
-    */
 
     // Step 4: Check trigger conditions
     /*
