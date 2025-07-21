@@ -57,6 +57,13 @@ export function parseGitHubContext(): ParsedGitHubContext {
     console.log(`📦 Reconstructed eventName: ${context.eventName}, action: ${context.payload.action}`);
   }
 
+  if (context.eventName === 'repository_dispatch' && context.payload.client_payload?.original_event_payload) {
+    // Replace bot actor with original user
+    context.actor = context.payload.client_payload.original_event_payload.sender?.login 
+      || context.payload.client_payload.original_event_payload.issue?.user?.login 
+      || context.actor; // fallback to bot if somehow not found
+  }
+
   const commonFields = {
     runId: process.env.GITHUB_RUN_ID!,
     eventName: context.eventName,
