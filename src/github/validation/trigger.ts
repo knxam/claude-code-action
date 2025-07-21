@@ -13,7 +13,7 @@ import type { ParsedGitHubContext } from "../context";
 
 export function checkContainsTrigger(context: ParsedGitHubContext): boolean {
   const {
-    inputs: { assigneeTrigger, labelTrigger, triggerPhrase, directPrompt }
+    inputs: { assigneeTrigger, labelTrigger, triggerPhrase, directPrompt },
   } = context;
 
   if (context.triggeredByWebhook) {
