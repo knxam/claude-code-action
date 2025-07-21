@@ -13,11 +13,11 @@ import type { ParsedGitHubContext } from "../context";
 
 export function checkContainsTrigger(context: ParsedGitHubContext): boolean {
   const {
-    inputs: { assigneeTrigger, labelTrigger, triggerPhrase, directPrompt },
+    inputs: { assigneeTrigger, labelTrigger, triggerPhrase, directPrompt }
   } = context;
 
-  if (context.eventName === 'repository_dispatch') {
-    console.log("🚀 Detected execution via repository_dispatch, triggering action");
+  if (context.triggeredByWebhook) {
+    console.log("🚀 Detected execution via webhook, triggering action");
     return true;
   }
 
