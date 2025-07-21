@@ -40,15 +40,12 @@ async function run() {
     }
 
     // Step 4: Check trigger conditions
-    /*
     const containsTrigger = await checkTriggerAction(context);
 
     if (!containsTrigger) {
       console.log("No trigger found, skipping remaining steps");
       return;
     }
-    */
-    core.setOutput("contains_trigger", "true");
 
     // Step 5: Check if actor is human
     await checkHumanActor(octokit.rest, context);
